@@ -3,44 +3,135 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using System.Data.SqlClient;
+using System.Data;
+using WebAPI.Models;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace WebAPI.Controllers
 {
     [Route("api/[controller]")]
-    public class DepartmentController : Controller
+    [ApiController]
+    public class DepartmentController : ControllerBase
     {
-        // GET: api/values
+        private readonly IConfiguration _configuration;
+
+        public DepartmentController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
+
+        public JsonResult Get()
         {
-            return new string[] { "value1", "value2" };
+            string query = @"
+                    select DepartmentId, DepartmentName from dbo.Department";
+            DataTable table = new DataTable(); //need to call System.Data
+            string sqlDataSource = _configuration.GetConnectionString("EmployeeAppCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+            return new JsonResult(table);
         }
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/values
         [HttpPost]
-        public void Post([FromBody] string value)
+
+        public JsonResult Post(Department dep)
         {
+            string query = @"
+                    insert into dbo.Department values
+                    ('" + dep.DepartmentName + @"')";
+
+            DataTable table = new DataTable(); //need to call System.Data
+            string sqlDataSource = _configuration.GetConnectionString("EmployeeAppCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+
+            }
+            return new JsonResult("Added Successfully");
         }
 
-        // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        // Put Method to Update Data into dbo.Department table
+        [HttpPut]
+
+        public JsonResult Put(Department dep)
         {
+            string query = @"
+                    update dbo.Department set
+                    DepartmentName = '" + dep.DepartmentName + @"'
+                    where DepartmentId = " + dep.DepartmentId + @"
+                    ";
+
+            DataTable table = new DataTable(); //need to call System.Data
+            string sqlDataSource = _configuration.GetConnectionString("EmployeeAppCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+
+            }
+            return new JsonResult("Update Successfully");
         }
 
-        // DELETE api/values/5
+        // Delete Method
+        // since we are sending id in URL, we need to add it in root parameter
         [HttpDelete("{id}")]
-        public void Delete(int id)
+
+        public JsonResult Delete(int id)
         {
+            string query = @"
+                    delete from dbo.Department
+                    where DepartmentId = '"+ id + @"'
+                    ";
+
+            DataTable table = new DataTable(); //need to call System.Data
+            string sqlDataSource = _configuration.GetConnectionString("EmployeeAppCon");
+            SqlDataReader myReader;
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader); ;
+
+                    myReader.Close();
+                    myCon.Close();
+                }
+
+            }
+            return new JsonResult("Delete Successfully");
         }
     }
 }
